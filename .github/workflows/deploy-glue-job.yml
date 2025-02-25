@@ -1,0 +1,49 @@
+name: Deploy Glue Infrastructure
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: eu-north-1
+  SRC_CD_BUCKET: 'src-code-bucket-learning'  # Set in GitHub secrets
+  PROJECT_KEY_PREFIX: 'MyfirstPOC'    # Set in GitHub secrets
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload Glue Script to S3
+        run: |
+          # Upload with version identifier
+          TIMESTAMP=$(date +%s)
+          aws s3 cp ./scripts/glue-job.py \
+            s3://$SRC_CD_BUCKET/$PROJECT_KEY_PREFIX/glue-job-scripts/glue-job-${TIMESTAMP}.py
+
+
+          # Update latest version
+          aws s3 cp ./scripts/glue-job.py \
+            s3://$SRC_CD_BUCKET/$PROJECT_KEY_PREFIX/glue-job-scripts/glue-job-latest.py
+
+      - name: Deploy CloudFormation Stack
+        run: |
+          aws cloudformation deploy \
+            --template-file ./cloudformation/glue-job.yaml  \
+            --stack-name glue-stack \
+            --parameter-overrides \
+              GlueScriptBucket=$SRC_CD_BUCKET \
+              GlueScriptKey=$PROJECT_KEY_PREFIX/glue-job-scripts/glue-job-latest.py \
+            --capabilities CAPABILITY_NAMED_IAM
