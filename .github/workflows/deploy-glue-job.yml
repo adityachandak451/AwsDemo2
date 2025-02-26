@@ -10,8 +10,8 @@ permissions:
 
 env:
   AWS_REGION: eu-north-1
-  SRC_CD_BUCKET: 'src-code-bucket-learning'  # Set in GitHub secrets
-  PROJECT_KEY_PREFIX: 'MyfirstPOC'    # Set in GitHub secrets
+  SRC_CD_BUCKET: 'src-code-bucket-learning'
+  PROJECT_KEY_PREFIX: 'SecondPOC'
 
 jobs:
   deploy:
@@ -28,15 +28,9 @@ jobs:
 
       - name: Upload Glue Script to S3
         run: |
-          # Upload with version identifier
           TIMESTAMP=$(date +%s)
-          aws s3 cp ./scripts/glue-job.py \
-            s3://$SRC_CD_BUCKET/$PROJECT_KEY_PREFIX/glue-job-scripts/glue-job-${TIMESTAMP}.py
-
-
-          # Update latest version
-          aws s3 cp ./scripts/glue-job.py \
-            s3://$SRC_CD_BUCKET/$PROJECT_KEY_PREFIX/glue-job-scripts/glue-job-latest.py
+          aws s3 cp ./scripts/s3_to_parquet_job.py s3://$SRC_CD_BUCKET/$PROJECT_KEY_PREFIX/glue-job-scripts/s3_to_parquet_job-${TIMESTAMP}.py
+          aws s3 cp ./scripts/s3_to_parquet_job.py s3://$SRC_CD_BUCKET/$PROJECT_KEY_PREFIX/glue-job-scripts/s3_to_parquet_job-latest.py
 
       - name: Deploy CloudFormation Stack
         run: |
@@ -44,6 +38,6 @@ jobs:
             --template-file ./cloudformation/glue-job.yaml  \
             --stack-name glue-stack \
             --parameter-overrides \
-              GlueScriptBucket=$SRC_CD_BUCKET \
-              GlueScriptKey=$PROJECT_KEY_PREFIX/glue-job-scripts/glue-job-latest.py \
+              ScriptBucket=$SRC_CD_BUCKET \
+              ScriptKey=$PROJECT_KEY_PREFIX/glue-job-scripts/s3_to_parquet_job-latest.py \
             --capabilities CAPABILITY_NAMED_IAM
