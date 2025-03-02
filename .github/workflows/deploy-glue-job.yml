@@ -23,7 +23,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: 'arn:aws:iam::585008084392:role/Aws-Github'
+          role-to-assume: 'arn:aws:iam::585008084392:role/GithubRoleForAwsDemo'
           aws-region: 'eu-north-1'
 
       - name: Upload Glue Script to S3
